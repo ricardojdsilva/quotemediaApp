@@ -1,5 +1,8 @@
 package com.quotemedia.interview.resources;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,14 +35,28 @@ public class QuoteResource {
 		
 	}
 	
+
 	
 	//this method retrieve information by Symbol name EX: MSF, GOOG AND FB
 	
 	@GetMapping(value = "/{id}")
 	public ResponseEntity<List<Quote>> findById(@PathVariable("id") String symbol){
 		
-		
-		List<Quote> list = service.findBySymbol(symbol.toUpperCase());
+	    List<Quote> list = null;
+	    
+	    if (ValidateSymbol(symbol)) {
+	        
+	        list = service.findBySymbol(symbol.toUpperCase());
+	        //RETURN 404 Not found
+	        if (list.size() == 0) throw new ResourceNotFoundException(); 
+	        
+	    }else {
+            
+            // RETURN 400 BAD REQUEST
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+	    
+		 
 		
 		return ResponseEntity.ok().body(list);
 		
@@ -61,6 +78,7 @@ public class QuoteResource {
 	public ResponseEntity<List<Quote>> findLastQuoteBySymbol(@PathVariable("id") String symbol){
 		
 		List<Quote> list = null;
+		
 		if (ValidateSymbol(symbol)) {
 			 list = service.findLastest(symbol.toUpperCase());
 			 //RETURN 404 Not found
@@ -83,8 +101,15 @@ public class QuoteResource {
 	public ResponseEntity<List<Quote>> findHighestByDate(@PathVariable("date") String date){
 		List<Quote> list = null;
 		
-		list = service.findHighest(date);
-		if (list.size() == 0) throw new ResourceNotFoundException();		
+		if (isDateValid(date)) {
+		    list = service.findHighest(date);
+		    //RETURN 404 Not found
+	        if (list.size() == 0) throw new ResourceNotFoundException();        
+		}else {
+		    // RETURN 400 BAD REQUEST
+		    return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
+		
 		
 		return ResponseEntity.ok().body(list);
 	}
@@ -101,7 +126,19 @@ public class QuoteResource {
 			
 	}
 	
-	
+    final static String DATE_FORMAT = "dd-MM-yyyy";
+
+    public static boolean isDateValid(String date) 
+	{
+	        try {
+	            DateFormat df = new SimpleDateFormat(DATE_FORMAT);
+	            df.setLenient(false);
+	            df.parse(date);
+	            return true;
+	        } catch (ParseException e) {
+	            return false;
+	        }
+	}
 	
 	
 }
